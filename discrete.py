@@ -13,6 +13,7 @@ import math
 import time
 import datetime
 
+#just a wrapper to get observation dimension and action dimension
 class GymWrapper():
     def __init__(self, env):
         self.env = env        
