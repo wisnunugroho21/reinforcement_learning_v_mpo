@@ -257,9 +257,9 @@ class TemperatureLoss():
 
     def compute_loss(self, values, next_values, rewards, dones, temperature):
         advantages  = self.advantage_function.compute_advantages(rewards, values, next_values, dones).detach()                
-        top_adv, _  = torch.topk(advantages, math.ceil(len(advantages) / 2), 0)
+        top_adv, _  = torch.topk(advantages, math.ceil(advantages.size(0) / 2), 0)
 
-        n           = torch.Tensor([len(top_adv)]).to(self.device)
+        n           = torch.Tensor([top_adv.size(0)]).to(self.device)
         ratio       = top_adv / (temperature + 1e-3)
 
         loss        = temperature * self.coef_temp + temperature * (torch.logsumexp(ratio, dim = 0) - n.log())
@@ -274,7 +274,7 @@ class PhiLoss():
         temperature         = temperature.detach()
 
         advantages          = self.advantage_function.compute_advantages(rewards, values, next_values, dones).detach()
-        top_adv, top_idx    = torch.topk(advantages, math.ceil(len(advantages) / 2), 0)
+        top_adv, top_idx    = torch.topk(advantages, math.ceil(advantages.size(0) / 2), 0)
 
         logprobs            = self.distribution.logprob(action_datas, actions)
         top_logprobs        = logprobs[top_idx]        
@@ -291,7 +291,7 @@ class EntropyLoss():
         self.entropy_coef       = entropy_coef
 
     def compute_loss(self, action_datas):
-        loss                = -1 * 0.1 * self.distribution.entropy(action_datas).mean()
+        loss                = -1 * self.entropy_coef * self.distribution.entropy(action_datas).mean()
 
         return loss
 
@@ -542,7 +542,7 @@ reward_threshold        = 1000 # Set threshold for reward. The learning will sto
 
 n_plot_batch            = 1 # How many episode you want to plot the result
 n_iteration             = 100000000 # How many episode you want to run
-n_update                = 2048 # How many episode before you update the Policy
+n_update                = 128 # How many episode before you update the Policy
 n_saved                 = 1
 
 coef_alpha_upper        = 0.01
@@ -560,7 +560,7 @@ entropy_coef            = 0.1
 device                  = torch.device('cuda')
 folder                  = 'weights'
 
-env                     = gym.make('BipedalWalker-v3') # gym.make('BipedalWalker-v3') #gym.make("HumanoidBulletEnv-v0") # gym.make('BipedalWalker-v3') for _ in range(2)] # CarlaEnv(im_height = 240, im_width = 240, im_preview = False, max_step = 512) # [gym.make(env_name) for _ in range(2)] # CarlaEnv(im_height = 240, im_width = 240, im_preview = False, seconds_per_episode = 3 * 60) # [gym.make(env_name) for _ in range(2)] # gym.make(env_name) # [gym.make(env_name) for _ in range(2)]
+env                     = gym.make('CartPole-v1')
 
 state_dim               = None
 action_dim              = None

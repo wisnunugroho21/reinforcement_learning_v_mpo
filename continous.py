@@ -309,9 +309,9 @@ class TemperatureLoss():
 
     def compute_loss(self, values, next_values, rewards, dones, temperature):
         advantages  = self.advantage_function.compute_advantages(rewards, values, next_values, dones).detach()                
-        top_adv, _  = torch.topk(advantages, math.ceil(len(advantages) / 2), 0)
+        top_adv, _  = torch.topk(advantages, math.ceil(advantages.size(0) / 2), 0)
 
-        n           = torch.Tensor([len(top_adv)]).to(self.device)
+        n           = torch.Tensor([top_adv.size(0)]).to(self.device)
         ratio       = top_adv / (temperature + 1e-3)
 
         loss        = temperature * self.coef_temp + temperature * (torch.logsumexp(ratio, dim = 0) - n.log())
@@ -326,7 +326,7 @@ class PhiLoss():
         temperature         = temperature.detach()
 
         advantages          = self.advantage_function.compute_advantages(rewards, values, next_values, dones).detach()
-        top_adv, top_idx    = torch.topk(advantages, math.ceil(len(advantages) / 2), 0)
+        top_adv, top_idx    = torch.topk(advantages, math.ceil(advantages.size(0) / 2), 0)
 
         logprobs            = self.distribution.logprob(action_datas, actions)
         top_logprobs        = logprobs[top_idx]        
@@ -343,8 +343,7 @@ class EntropyLoss():
         self.entropy_coef       = entropy_coef
 
     def compute_loss(self, action_datas):
-        loss                = -1 * 0.1 * self.distribution.entropy(action_datas).mean()
-
+        loss                = -1 * self.entropy_coef * self.distribution.entropy(action_datas).mean()
         return loss
 
 class AgentVMPO():  
